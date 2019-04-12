@@ -14,109 +14,84 @@ input_path = 'Assets/app_rec_2.mov'
 elements_img_type = 'png'
 
 visualize = False             
-tm_threshold = 0.6
-intensity_threshold = 10
-
+tm_threshold_cursor = 0.6
+tm_threshold_elements = 0.7
+tm_threshold_page = 100000
+intensity_threshold = 5
+current_page = None
+click = False
+animation_in_progress = False
 
 # Elements load
-(elements,elements_id) = el.load_elements(elements_path, elements_img_type)
+elements = el.load_elements(elements_path, elements_img_type)
 
 cursor = cv2.imread(cursor_path)
 cursor = cv2.cvtColor(cursor, cv2.COLOR_BGR2GRAY)
 # cursor = cv2.Canny(cursor, 50, 200)
-(tH, tW) = cursor.shape[:2]
 
 cap = cv2.VideoCapture(input_path)
 
 if cap.isOpened() == False:
 	print("Error opening video stream or file!")
 
-_ , screenshot = cap.read()
+_ , first_frame = cap.read()
 
-elements_coord = el.get_elements_coordinates(elements, elements_id, screenshot,tm_threshold)
-elements_color_diff = dict()
-for eid in elements_id:
-	if elements_coord[eid] != None:
-		coord_image = screenshot[	elements_coord[eid][0][1]:elements_coord[eid][1][1],
-									elements_coord[eid][0][0]:elements_coord[eid][1][0]	]
-		avg1 = cv2.mean(elements[eid])[0:3]
-		avg2 = cv2.mean(coord_image)[0:3]
-		elements_color_diff[eid] = el.color_diff(avg1,avg2) 
+elements_coord = el.get_elements_coordinates(elements, first_frame, tm_threshold_elements)
+elements_color_diff = el.get_elements_color_diff(elements, elements_coord, first_frame)
 
-
-click = False
-
+old_frame = first_frame
 while cap.isOpened():
-	ret , image = cap.read()
+	ret , frame = cap.read()
 	if ret == False:
 		break
-	image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+	new_page = False
+	keyframe = el.check_keyframe(frame,old_frame, tm_threshold_page)
+	if keyframe:
+		animation_in_progress = True
+		elements_coord = el.get_elements_coordinates(elements, frame, tm_threshold_elements)
+		elements_color_diff = el.get_elements_color_diff(elements, elements_coord, frame)
+	elif animation_in_progress:
+		new_page = True
+		animation_in_progress = False
 
-	found = None
-	# scales = np.linspace(0.2, 1.0, 20)[::-1] 	#multi scale
-	scales = [1]; 								#single scale
+	if new_page:
+		print('New Page')
+	old_frame = frame
 
-	for scale in scales:
+	image_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+	(startX, startY,endX, endY) = el.find_element(image_gray, cursor, tm_threshold_cursor)
 
-		resized = imutils.resize(image_gray, width = int(image_gray.shape[1] * scale))
-		r = image_gray.shape[1] / float(resized.shape[1])
-
-		if resized.shape[0] < tH or resized.shape[1] < tW:
-			break
-
-		# image_edge = cv2.Canny(resized,50,200)
-		result = cv2.matchTemplate(resized, cursor, cv2.TM_CCOEFF_NORMED)
-		(_, maxVal, _, maxLoc) = cv2.minMaxLoc(result)
-
-		if visualize:
-			clone = np.dstack([image_edge, image_edge, image_edge])
-			cv2.rectangle(clone, (maxLoc[0], maxLoc[1]),
-				(maxLoc[0] + tW, maxLoc[1] + tH), (0, 0, 255), 2)
-			cv2.imshow("Visualize", clone)
-			cv2.waitKey(0)
-
-		if found is None or maxVal > found[0]:
-			found = (maxVal,maxLoc,r)
-	print maxVal	
-	(maxVal, maxLoc, r) = found
-	if maxVal > tm_threshold:
-		(startX, startY) = (int(maxLoc[0] * r), int(maxLoc[1] * r))
-		(endX, endY) = (int((maxLoc[0] + tW) * r), int((maxLoc[1] + tH) * r))
-	else:
-		(startX, startY,endX, endY) = (0,0,0,0)
-
-	# draw a bounding box around the detected result and display the image
-	
-	cv2.rectangle(image, (startX, startY), (endX, endY), (51, 51, 255), 3)
-	for eid in elements_id:
+	# draw a bounding box around the detected result 
+	view_frame = frame.copy()
+	cv2.rectangle(view_frame, (startX, startY), (endX, endY), (51, 51, 255), 3)
+	for eid in elements.keys():
 		color = (51, 255, 153)
 
-		
 		if elements_coord[eid] != None and el.do_overlap( elements_coord[eid][0], elements_coord[eid][1],
 															(startX, startY), (endX, endY)):
 			color = (51, 225, 255)
-			el_image = image[	elements_coord[eid][0][1]:elements_coord[eid][1][1],
+			el_image = view_frame[	elements_coord[eid][0][1]:elements_coord[eid][1][1],
 								elements_coord[eid][0][0]:elements_coord[eid][1][0]  ]
 			avg1 = cv2.mean(elements[eid])[0:3]
 			avg2 = cv2.mean(el_image)[0:3] 
 			intensity_diff = abs(elements_color_diff[eid] - el.color_diff(avg1,avg2))
 			
-			
 			if intensity_diff > intensity_threshold:
 				click = True
 
-			if intensity_diff < intensity_threshold and click == True:
+			if click and (new_page or intensity_diff < intensity_threshold):
 				# print(abs(elements_color_diff[eid] - el.color_diff(avg1,avg2)))
 				print("Element " + str(eid) + " pressed!")
 				click = False
 
 			
 			
-		cv2.rectangle(image, elements_coord[eid][0], elements_coord[eid][1], color, 3)
+		cv2.rectangle(view_frame, elements_coord[eid][0], elements_coord[eid][1], color, 3)
 
 
-	resized = imutils.resize(image, width = int(image_gray.shape[1] * 0.4))
-	cv2.imshow("Image", resized)
+	resized = imutils.resize(view_frame, width = int(image_gray.shape[1] * 0.4))
+	cv2.imshow("Video", resized)
+
 	if cv2.waitKey(25) & 0xFF == ord('q'):
 		break           
 
