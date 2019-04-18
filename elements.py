@@ -11,7 +11,6 @@ import cv2
 def check_keyframe(frame, old_frame, threshold):
 	diff = cv2.absdiff(frame, old_frame)
 	non_zeros = np.count_nonzero(diff > 3)   
-	print non_zeros 
 	if non_zeros > threshold:
 		return True
 	else:
@@ -26,19 +25,47 @@ def check_keyframe(frame, old_frame, threshold):
 	# else:
 	# 	return True
 
+def load_pages(file_name):
+	pages = dict()
+
+	with open(file_name, "r") as string_file:
+		for line in string_file:
+			string_list = [s.replace('\n', '') for s in line.split(' ')]
+			pages[string_list[0]] = string_list[1:]
+
+	return pages
+
+def get_current_page(elements_coord, pages):
+	all_pages = set()
+
+	for page in pages.values():
+		all_pages = all_pages.union(page)
+
+	for eid in elements_coord.keys(): 
+		if elements_coord[eid] != [(0,0),(0,0)]:
+			all_pages = all_pages.intersection(pages[eid])
+
+	if len(all_pages) == 1:
+		current_page = all_pages.pop()
+		return current_page
+	else:
+		print("There are more than 1 page with the same elements")
+	
+
+
+
 def load_elements(path, type):
 	elements = dict()
-	elements_id = [];
 	
 	for file in glob.glob(path + '*' + type):					#ex: 'Assets/elements/*png'
 		id = file[file.rfind('/') + 1 : file.find('.'+type)]
 		elements[id] = cv2.imread(file)
-		elements_id.append(id)
-
+	
 	return elements
 
 def get_elements_color_diff(elements, elements_coord, screenshot):
 	elements_color_diff = dict()
+	
 	for eid in elements.keys():
 		if elements_coord[eid] != None:
 			coord_image = screenshot[	elements_coord[eid][0][1]:elements_coord[eid][1][1],
@@ -46,6 +73,7 @@ def get_elements_color_diff(elements, elements_coord, screenshot):
 			avg1 = cv2.mean(elements[eid])[0:3]
 			avg2 = cv2.mean(coord_image)[0:3]
 			elements_color_diff[eid] = color_diff(avg1,avg2) 
+	
 	return elements_color_diff
 
 def get_elements_coordinates(elements, screenshot, threshold):

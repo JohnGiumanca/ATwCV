@@ -1,0 +1,2 @@
+loginButton loginWithEmailAndPass(emailTextField, passwordTextField)
+loginButton goToLoginScreen()

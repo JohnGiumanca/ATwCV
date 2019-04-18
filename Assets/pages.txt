@@ -1,0 +1,5 @@
+backButton LoginPage
+emailTextField LoginPage
+loginButton LoginPage HomePage
+passwordTextField LoginPage
+registerButton HomePage
