@@ -1,5 +1,10 @@
-backButton LoginPage
-emailTextField LoginPage
-loginButton LoginPage HomePage
-passwordTextField LoginPage
-registerButton HomePage
+Login_Button HomePage LoginPage
+Register_Button HomePage RegisterPage
+Back_Button LoginPage RegisterPage
+Email_TextField LoginPage RegisterPage
+Password_TextField LoginPage RegisterPage
+Name_TextField RegisterPage
+Gender_RadioButton RegisterPage
+Student_CheckBox RegisterPage
+Interestedin_PopUp RegisterPage
+

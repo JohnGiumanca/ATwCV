@@ -3,10 +3,52 @@ import argparse
 import imutils
 import glob
 import cv2
+import re
+from pytesseract import image_to_string
+from PIL import Image, ImageEnhance, ImageFilter
 
+'''
+	notes:
+		-	for get_evet, if OCR does not work propperly, continue to preprocess image. 
+				link: https://medium.freecodecamp.org/getting-started-with-tesseract-part-ii-f7f9a0899b3f
+'''
 
+def get_event(frame, elements_coord, key, functions,types):
 
-	
+	if key in functions:
+		function_name = functions[key][0]
+		event = function_name + '('
+		
+		parameters = functions[key][1:]
+		for param in parameters:
+			if types[param] == 'TextField':
+				(startX, startY),(endX, endY) = elements_coord[param]
+				field_image = frame[startY:endY,startX:endX]
+				field_image = cv2.cvtColor(field_image,cv2.COLOR_BGR2GRAY)
+				field_image = cv2.resize(field_image, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
+				field_image = cv2.GaussianBlur(field_image, (5, 5), 0)
+				field_image = cv2.threshold(field_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+				# cv2.imshow('img',field_image)
+				# cv2.waitKey(0)
+				# cv2.destroyAllWindows()
+				field_string = image_to_string(field_image, lang='eng')
+				processed_string = field_string.split(' ')[-1]
+				# print param + ' - ' + processed_string
+				event = event + ' '+ processed_string 
+		
+		event = event + ')'
+		return event
+		
+	else:
+		return None
+
+def get_elements_type(elements):
+	types = dict()
+
+	for eid in elements.keys():
+		types[eid] = eid[eid.find('_')+1:]
+	return types
+
 
 def check_keyframe(frame, old_frame, threshold):
 	diff = cv2.absdiff(frame, old_frame)
@@ -17,19 +59,11 @@ def check_keyframe(frame, old_frame, threshold):
 		return False
 
 
-# 	# result = cv2.matchTemplate(frame, current_page, cv2.TM_CCOEFF_NORMED)
-	# (_, maxVal, _, _) = cv2.minMaxLoc(result)
-	# print(maxVal)
-	# if maxVal > threshold:
-	# 	return False
-	# else:
-	# 	return True
-
 def load_pages(file_name):
 	pages = dict()
 
-	with open(file_name, "r") as string_file:
-		for line in string_file:
+	with open(file_name, "r") as input_file:
+		for line in input_file:
 			string_list = [s.replace('\n', '') for s in line.split(' ')]
 			pages[string_list[0]] = string_list[1:]
 
@@ -50,7 +84,17 @@ def get_current_page(elements_coord, pages):
 		return current_page
 	else:
 		print("There are more than 1 page with the same elements")
-	
+
+
+def load_functions(file_name):
+	functions = dict()
+
+	with open(file_name, "r") as input_file:
+		for line in input_file:
+			string_list = [s for s in re.split(' |, |,|\(|\)',line) if s != '' and s != '\n']
+			functions[string_list[0],string_list[1]] = string_list[2:]
+
+	return functions
 
 
 
@@ -116,7 +160,7 @@ def find_element(image, element, threshold = 0.9, edge_detection = False, multi_
 		(_, maxVal, _, maxLoc) = cv2.minMaxLoc(result)
 
 		if visualize:
-			clone = np.dstack([image_edge, image_edge, image_edge])
+			clone = np.dstack([result, result, result])
 			cv2.rectangle(clone, (maxLoc[0], maxLoc[1]),
 				(maxLoc[0] + tW, maxLoc[1] + tH), (0, 0, 255), 2)
 			cv2.imshow("Visualize", clone)
