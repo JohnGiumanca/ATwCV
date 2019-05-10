@@ -15,19 +15,19 @@ from PIL import Image, ImageEnhance, ImageFilter
 
 def get_event(frame, elements_coord, key, functions,types):
 
+	input_fields_path = '/Users/johnsmacbook/Desktop/ATwCV/Assets/input_fileds/'
+	text_size = 150
+
 	if key in functions:
 		function_name = functions[key][0]
 		event = function_name + '('
 		
 		parameters = functions[key][1:]
 		for param in parameters:
-			if types[param] == 'TextField':
+			if types[param] == 'TextField':		# get text in text area
 				(startX, startY),(endX, endY) = elements_coord[param]
 				field_image = frame[startY:endY,startX:endX]
-				field_image = cv2.cvtColor(field_image,cv2.COLOR_BGR2GRAY)
-				field_image = cv2.resize(field_image, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
-				field_image = cv2.GaussianBlur(field_image, (5, 5), 0)
-				field_image = cv2.threshold(field_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+				field_image = process_image_for_OCR(field_image,scale_factor = 3)
 				# cv2.imshow('img',field_image)
 				# cv2.waitKey(0)
 				# cv2.destroyAllWindows()
@@ -35,12 +35,68 @@ def get_event(frame, elements_coord, key, functions,types):
 				processed_string = field_string.split(' ')[-1]
 				# print param + ' - ' + processed_string
 				event = event + ' '+ processed_string 
-		
+			
+			if types[param] == 'RadioButton':	# get text after the checked radio button
+				(startX, startY),(endX, endY) = elements_coord[param]
+				field_image = frame[startY:endY,startX:endX]
+				
+				radio_on = cv2.imread(input_fields_path + 'radio_on.png')			
+				(startX, startY,endX, endY) = find_element(field_image,radio_on)
+
+				textbox_startX, textbox_startY = endX, startY
+				textbox_endX, textbox_endY= endX + text_size, endY 
+				text_image = field_image[textbox_startY:textbox_endY,textbox_startX:textbox_endX]
+				# cv2.imwrite('image_of_text.png',text_image)
+				text_image = process_image_for_OCR(text_image,scale_factor = 2)
+				text_string = image_to_string(text_image, lang='eng')
+				# cv2.imshow('img',text_image)
+				# cv2.waitKey(0)
+				# cv2.destroyAllWindows()
+				event = event + ' '+ text_string
+
+			if types[param] == 'CheckBox':
+				options = []
+
+				(startX, startY),(endX, endY) = elements_coord[param]
+				field_image = frame[startY:endY,startX:endX]
+
+				checkbox_on = cv2.imread(input_fields_path + 'checkbox_on.png')
+				(startX, startY,endX, endY) = find_element(field_image,checkbox_on)
+
+				while (startX, startY,endX, endY) != (0,0,0,0):
+					textbox_startX, textbox_startY = endX, startY
+					textbox_endX, textbox_endY= endX + text_size, endY 
+					text_image = field_image[textbox_startY:textbox_endY,textbox_startX:textbox_endX]
+					# cv2.rectangle(field_image, (textbox_startX, textbox_startY), (textbox_endX, textbox_endY), (51, 255, 153), 3)
+					# cv2.imshow('img',field_image)
+					# cv2.waitKey(0)
+					# cv2.destroyAllWindows()
+					image = process_image_for_OCR(text_image,scale_factor = 3)
+					text_string = image_to_string(image, lang='eng')
+					options.append(text_string)
+					field_image[startY:endY,startX:endX] = (0,0,0) 
+					(startX, startY,endX, endY) = find_element(field_image,checkbox_on)
+
+				param_value = '['
+				for option in options:
+					param_value = param_value + ' ' + option
+				param_value = param_value + ' ]'
+
+				event = event + ' '+ param_value
+
 		event = event + ')'
 		return event
 		
 	else:
 		return None
+
+def process_image_for_OCR(image, scale_factor):
+	image = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+	image = cv2.resize(image, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_CUBIC)
+	image = cv2.GaussianBlur(image, (5, 5), 0)
+	image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+	# pil_img = Image.fromarray(image)
+	return image
 
 def get_elements_type(elements):
 	types = dict()
