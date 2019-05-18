@@ -81,8 +81,29 @@ def get_event(frame, elements_coord, key, functions,types):
 				for option in options:
 					param_value = param_value + ' ' + option
 				param_value = param_value + ' ]'
-
 				event = event + ' '+ param_value
+
+			if types[param] == 'PopUp':
+				(startX, startY),(endX, endY) = elements_coord[param]
+				field_image = frame[startY:endY,startX:endX]
+
+				popup_icon = cv2.imread(input_fields_path + 'popup.png')
+				(startX, startY,endX, endY) = find_element(field_image,popup_icon)
+				
+				textbox_startX, textbox_startY = startX - text_size, startY
+				textbox_endX, textbox_endY= startX, endY 
+				print 
+				text_image = field_image[textbox_startY:textbox_endY,textbox_startX:textbox_endX]
+				cv2.imshow('img',text_image)
+				cv2.waitKey(0)
+				cv2.destroyAllWindows()
+				text_image = process_image_for_OCR(text_image,scale_factor = 2)
+				text_string = image_to_string(text_image, lang='eng')
+				cv2.imshow('img',text_image)
+				cv2.waitKey(0)
+				cv2.destroyAllWindows()
+
+				event = event + ' '+ text_string
 
 		event = event + ')'
 		return event
