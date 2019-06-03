@@ -14,7 +14,7 @@ import elements as el
 
 cursor_path = 'Assets/cursor3.png'
 elements_path = 'Assets/elements/'
-input_path = 'Assets/app_rec_5.mov'
+input_path = 'Assets/app_rec_5.mp4'
 elements_img_type = 'png'
 pages_path = 'Assets/pages.txt'
 functions_path = 'Assets/functions.txt'

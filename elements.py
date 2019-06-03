@@ -40,7 +40,7 @@ def get_event(frame, elements_coord, key, functions,types):
 				(startX, startY),(endX, endY) = elements_coord[param]
 				field_image = frame[startY:endY,startX:endX]
 				
-				radio_on = cv2.imread(input_fields_path + 'radio_on.png')			
+				radio_on = cv2.imread(input_fields_path + 'RadioButton_on.png')			
 				(startX, startY,endX, endY) = find_element(field_image,radio_on)
 
 				textbox_startX, textbox_startY = endX, startY
@@ -60,7 +60,7 @@ def get_event(frame, elements_coord, key, functions,types):
 				(startX, startY),(endX, endY) = elements_coord[param]
 				field_image = frame[startY:endY,startX:endX]
 
-				checkbox_on = cv2.imread(input_fields_path + 'checkbox_on.png')
+				checkbox_on = cv2.imread(input_fields_path + 'CheckBox_on.png')
 				(startX, startY,endX, endY) = find_element(field_image,checkbox_on)
 
 				while (startX, startY,endX, endY) != (0,0,0,0):
@@ -87,7 +87,7 @@ def get_event(frame, elements_coord, key, functions,types):
 				(startX, startY),(endX, endY) = elements_coord[param]
 				field_image = frame[startY:endY,startX:endX]
 
-				popup_icon = cv2.imread(input_fields_path + 'popup.png')
+				popup_icon = cv2.imread(input_fields_path + 'PopUp.png')
 				(startX, startY,endX, endY) = find_element(field_image,popup_icon)
 				
 				textbox_startX, textbox_startY = startX - text_size, startY
