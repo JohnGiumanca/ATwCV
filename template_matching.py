@@ -1,9 +1,10 @@
-import numpy as np
 import argparse
 import imutils
 import glob
 import cv2
+import sys
 import elements as el
+
 
 
 # Notes: 
@@ -12,12 +13,21 @@ import elements as el
 # 	* need to make serious error handlers for the input file. Ex: the elements names form pages file
 # 		needs to be the same as the ones from the elements folder
 
-cursor_path = 'Assets/cursor3.png'
-elements_path = 'Assets/elements/'
-input_path = 'Assets/app_rec_5.mp4'
+if len(sys.argv) > 1:
+	assets_path = sys.argv[1]
+else:
+	assets_path = '/Users/johnsmacbook/Desktop/ATwCV/Assets'
+
+output_file_name = 'output_file.txt'
+output_file = open(output_file_name,'w') 
+
+input_fields_path = assets_path + '/input_fields/'
+cursor_path = assets_path + '/cursor.png'
+elements_path = assets_path + '/elements/'
+input_path = assets_path + '/app_rec.mp4'
 elements_img_type = 'png'
-pages_path = 'Assets/pages.txt'
-functions_path = 'Assets/functions.txt'
+pages_path = assets_path + '/pages.txt'
+functions_path = assets_path + '/functions.txt'
 
 color_green = (51, 255, 153)
 color_red = (51, 51, 255)
@@ -116,7 +126,7 @@ while cap.isOpened():
 				# print(abs(elements_color_diff[eid] - el.color_diff(avg1,avg2)))
 				# event = "Element " + str(eid) + " pressed!"
 				key = eid,current_page
-				event = el.get_event(frame, elements_coord, key, functions,types)
+				event = el.get_event(frame, elements_coord, key, functions,types, input_fields_path)
 				if event is not None and event != event_history[-1]:
 					event_history.append(event)
 					print(event)
@@ -135,6 +145,10 @@ while cap.isOpened():
 	if cv2.waitKey(25) & 0xFF == ord('q'):
 		break           
 
+for event in event_history:
+	output_file.write(event + '\n')
+
+output_file.close()
 cap.release()
 cv2.destroyAllWindows()
 
