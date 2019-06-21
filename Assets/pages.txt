@@ -1,10 +1,12 @@
 Login_Button HomePage LoginPage
 Register_Button HomePage RegisterPage
-Back_Button LoginPage RegisterPage
+Back_Button LoginPage RegisterPage UserRegisteredPage UserLoggedPage
+UserRegistered_TextLabel UserRegisteredPage
+UserLogged_TextLable UserLoggedPage
 Email_TextField LoginPage RegisterPage
 Password_TextField LoginPage RegisterPage
 Name_TextField RegisterPage
 Gender_RadioButton RegisterPage
-Student_CheckBox RegisterPage
+Status_CheckBox RegisterPage
 Interestedin_PopUp RegisterPage
 

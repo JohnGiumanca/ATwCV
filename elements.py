@@ -1,8 +1,7 @@
-import numpy as np
-import argparse
+import cv2
+import numpy as np 
 import imutils
 import glob
-import cv2
 import re
 from pytesseract import image_to_string
 from PIL import Image, ImageEnhance, ImageFilter
@@ -47,6 +46,7 @@ def get_event(frame, elements_coord, key, functions,types,input_fields_path):
 				textbox_endX, textbox_endY= endX + text_size, endY 
 				text_image = field_image[textbox_startY:textbox_endY,textbox_startX:textbox_endX]
 				# cv2.imwrite('image_of_text.png',text_image)
+				print(textbox_startY,textbox_endY,textbox_startX,textbox_endX)
 				text_image = process_image_for_OCR(text_image,scale_factor = 2)
 				text_string = image_to_string(text_image, lang='eng')
 				# cv2.imshow('img',text_image)
