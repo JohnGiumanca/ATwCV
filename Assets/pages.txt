@@ -1,6 +1,8 @@
 Login_Button HomePage LoginPage
 Register_Button HomePage RegisterPage
-Back_Button LoginPage RegisterPage UserRegisteredPage UserLoggedPage
+backHome_Button LoginPage RegisterPage 
+backRegister_Button UserRegisteredPage 
+backLogin_Button UserLoggedPage
 UserRegistered_TextLabel UserRegisteredPage
 UserLogged_TextLable UserLoggedPage
 Email_TextField LoginPage RegisterPage

@@ -46,7 +46,6 @@ def get_event(frame, elements_coord, key, functions,types,input_fields_path):
 				textbox_endX, textbox_endY= endX + text_size, endY 
 				text_image = field_image[textbox_startY:textbox_endY,textbox_startX:textbox_endX]
 				# cv2.imwrite('image_of_text.png',text_image)
-				print(textbox_startY,textbox_endY,textbox_startX,textbox_endX)
 				text_image = process_image_for_OCR(text_image,scale_factor = 2)
 				text_string = image_to_string(text_image, lang='eng')
 				# cv2.imshow('img',text_image)
@@ -124,11 +123,11 @@ def get_elements_type(elements):
 
 def check_keyframe(frame, old_frame, threshold):
 	diff = cv2.absdiff(frame, old_frame)
-	non_zeros = np.count_nonzero(diff > 3)   
+	non_zeros = np.count_nonzero(diff > 3)
 	if non_zeros > threshold:
-		return True
+		return 1
 	else:
-		return False
+		return 0
 
 
 def load_pages(file_name):

@@ -3,6 +3,7 @@ import imutils
 import glob
 import sys
 import elements as el
+import numpy as np 
 
 
 
@@ -23,7 +24,7 @@ output_file = open(output_file_name,'w')
 input_fields_path = assets_path + '/input_fields/'
 cursor_path = assets_path + '/cursor.png'
 elements_path = assets_path + '/elements/'
-input_path = assets_path + '/app_rec.mov'
+input_path = assets_path + '/app_rec3.mov'
 elements_img_type = 'png'
 pages_path = assets_path + '/pages.txt'
 functions_path = assets_path + '/functions.txt'
@@ -33,13 +34,16 @@ color_red = (51, 51, 255)
 color_yellow = (51, 225, 255)
 
 visualize = True             
-tm_threshold_cursor = 0.6
+tm_threshold_cursor = 0.5
 tm_threshold_elements = 0.7
-tm_threshold_page = 200000
-intensity_threshold = 5
+threshold_page = 150000
+intensity_threshold = 4.0
 current_page = None
 click = False
 animation_in_progress = False
+animation_start = False
+cursor_on_element = False
+keyframes = np.array([0,0,0,0,0,0,0,0,0,0])
 event_history = [] 			#event_history list, first elements means nothing			
 
 # Elements load
@@ -80,10 +84,15 @@ while cap.isOpened():
 	
 	#check for new page
 	new_page = False
-	keyframe = el.check_keyframe(frame, old_frame, tm_threshold_page)
+	keyframes = keyframes[:-1]
+	keyframe = el.check_keyframe(frame, old_frame, threshold_page)
+	keyframes = np.append(keyframe, keyframes)
+	# print(keyframes)
 	if keyframe:
+		if animation_in_progress is False:
+			animation_start = True
 		animation_in_progress = True
-	elif animation_in_progress:
+	elif animation_in_progress and np.sum(keyframes[:3]) == 0:
 		new_page = True
 		animation_in_progress = False
 		elements_coord = el.get_elements_coordinates(elements, frame, tm_threshold_elements)
@@ -93,10 +102,6 @@ while cap.isOpened():
 		new_current_page = el.get_current_page(elements_coord, pages)
 		if new_current_page is not None:
 			current_page = new_current_page
-		event = 'New Page - ' + current_page
-		if event != event_history[-1]:
-			event_history.append(event)
-			print(event)
 	old_frame = frame
 
 	#find cursor
@@ -107,11 +112,14 @@ while cap.isOpened():
 	view_frame = frame.copy()
 	cv2.rectangle(view_frame, (startX, startY), (endX, endY), color_red, 3)
 	
+	cursor_on_element = False
+
 	for eid in elements.keys():
 		color = color_green
-
-		if elements_coord[eid] != None and el.do_overlap( elements_coord[eid][0], elements_coord[eid][1],
+		if elements_coord[eid] != [(0,0),(0,0)] and el.do_overlap( elements_coord[eid][0], elements_coord[eid][1],
 															(startX, startY), (endX, endY)):
+			cursor_on_element = True
+
 			color = color_yellow
 			el_image = view_frame[	elements_coord[eid][0][1]:elements_coord[eid][1][1],
 								elements_coord[eid][0][0]:elements_coord[eid][1][0]  ]
@@ -121,22 +129,28 @@ while cap.isOpened():
 			
 			if intensity_diff > intensity_threshold:
 				click = True
-
-			if click and (animation_in_progress or intensity_diff < intensity_threshold):
-				# print(abs(elements_color_diff[eid] - el.color_diff(avg1,avg2)))
-				# event = "Element " + str(eid) + " pressed!"
-				print(animation_in_progress)
-				print(intensity_diff)
-				key = eid,current_page
-				event = el.get_event(frame, elements_coord, key, functions,types, input_fields_path)
-				if event is not None and event != event_history[-1]:
-					event_history.append(event)
-					print(event)
-				
-				click = False
-
-
+			# print('----')
+			# print('Click: ' + str(click))
+			# print('Intens diff: ' + str(intensity_diff))
+			# print('Animation Start: ' + str(animation_start))
+			# print('----')
+			if click:
+				if animation_start or (intensity_diff < intensity_threshold and animation_in_progress is False):
+					# print(abs(elements_color_diff[eid] - el.color_diff(avg1,avg2)))
+					# event = "Element " + str(eid) + " pressed!"
+					key = eid,current_page
+					action = el.get_event(frame, elements_coord, key, functions,types, input_fields_path)					
+					event = current_page + ' ' + str(action)
+					if action is not None and event != event_history[-1]:
+						event_history.append(event)
+						print(event)
+					
+					animation_start = False
+					click = False
+			
 		cv2.rectangle(view_frame, elements_coord[eid][0], elements_coord[eid][1], color, 3)
+	if cursor_on_element is False:
+		click = False
 
 
 	if visualize:
@@ -144,7 +158,7 @@ while cap.isOpened():
 	resized = imutils.resize(frame, width = int(image_gray.shape[1] * 0.6))
 	cv2.imshow("Video", resized)
 
-	cv2.waitKey(0)
+	# cv2.waitKey(0)
 	if cv2.waitKey(25) & 0xFF == ord('q'):
 		break           
 
