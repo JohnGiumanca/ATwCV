@@ -12,7 +12,7 @@ from PIL import Image, ImageEnhance, ImageFilter
 				link: https://medium.freecodecamp.org/getting-started-with-tesseract-part-ii-f7f9a0899b3f
 '''
 
-def get_event(frame, elements_coord, key, functions,types,input_fields_path):
+def get_event(frame, elements, elements_coord, key, functions,types,input_fields_path):
 
 	input_fields_path = '/Users/johnsmacbook/Desktop/ATwCV/Assets/input_fileds/'
 	text_size = 150
@@ -24,16 +24,26 @@ def get_event(frame, elements_coord, key, functions,types,input_fields_path):
 		parameters = functions[key][1:]
 		for param in parameters:
 			if types[param] == 'TextField':		# get text in text area
+				empty_field = elements[param]
+				empty_field = process_image_for_OCR(empty_field,scale_factor = 5, filter = 'bilateralFilter')
+				empty_field_text = image_to_string(empty_field, lang='eng')
+				split_empty_field_text = re.split(' |\n',empty_field_text)
+				print('---')
+				print(split_empty_field_text)
+
 				(startX, startY),(endX, endY) = elements_coord[param]
 				field_image = frame[startY:endY,startX:endX]
-				field_image = process_image_for_OCR(field_image,scale_factor = 3)
-				# cv2.imshow('img',field_image)
-				# cv2.waitKey(0)
-				# cv2.destroyAllWindows()
+				field_image = process_image_for_OCR(field_image,scale_factor = 4)
 				field_string = image_to_string(field_image, lang='eng')
-				processed_string = field_string.split(' ')[-1]
+				split_field_text = re.split(' |\n',field_string)
+				print(split_field_text)
+				print('---')
+
+				diff = list_diff(split_field_text,split_empty_field_text)
+				text = ' '.join(diff)
+				# processed_string = field_string.split(' ')
 				# print param + ' - ' + processed_string
-				event = event + ' '+ processed_string 
+				event = event + text  + ', '
 			
 			if types[param] == 'RadioButton':	# get text after the checked radio button
 				(startX, startY),(endX, endY) = elements_coord[param]
@@ -51,7 +61,7 @@ def get_event(frame, elements_coord, key, functions,types,input_fields_path):
 				# cv2.imshow('img',text_image)
 				# cv2.waitKey(0)
 				# cv2.destroyAllWindows()
-				event = event + ' '+ text_string
+				event = event + text_string + ', '
 
 			if types[param] == 'CheckBox':
 				options = []
@@ -76,11 +86,11 @@ def get_event(frame, elements_coord, key, functions,types,input_fields_path):
 					field_image[startY:endY,startX:endX] = (0,0,0) 
 					(startX, startY,endX, endY) = find_element(field_image,checkbox_on)
 
-				param_value = '['
+				param_value = ''
 				for option in options:
 					param_value = param_value + ' ' + option
-				param_value = param_value + ' ]'
-				event = event + ' '+ param_value
+				
+				event = event + param_value + ', '
 
 			if types[param] == 'PopUp':
 				(startX, startY),(endX, endY) = elements_coord[param]
@@ -97,21 +107,65 @@ def get_event(frame, elements_coord, key, functions,types,input_fields_path):
 				text_string = image_to_string(text_image, lang='eng')
 	
 
-				event = event + ' '+ text_string
+				event = event + text_string + ', '
 
+		if len(parameters) > 0:
+			event = event[:-2]
 		event = event + ')'
 		return event
 		
 	else:
 		return None
 
-def process_image_for_OCR(image, scale_factor):
+def process_image_for_OCR(image, scale_factor, filter = 'GaussianBlur'):
 	image = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
 	image = cv2.resize(image, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_CUBIC)
-	image = cv2.GaussianBlur(image, (5, 5), 0)
+	# image = cv2.GaussianBlur(image, (5, 5), 0)
+	if filter == 'bilateralFilter':
+		image = cv2.bilateralFilter(image,9,75,75)
+	if filter == 'GaussianBlur':
+		image = cv2.GaussianBlur(image, (5, 5), 0)
 	image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 	# pil_img = Image.fromarray(image)
 	return image
+
+def list_diff(l1,l2):
+	for i in l2:
+		if i in l1:
+			l1.remove(i)
+	return l1
+
+# def process_image_for_ocr(image,factor):
+#     # TODO : Implement using opencv
+#     image = set_image_dpi(image,factor)
+#     image = remove_noise_and_smooth(image)
+#     return image
+
+
+# def set_image_dpi(image, factor):
+#     length_x, width_y, _ = image.shape 
+#     size = factor * length_x, factor * width_y
+#     # size = (1800, 1800)
+#     im_resized = cv2.resize(image, None, fx=factor, fy=factor, interpolation=cv2.INTER_CUBIC)
+#     return im_resized
+
+
+# def image_smoothening(image):
+#     ret1, th1 = cv2.threshold(image, BINARY_THREHOLD, 255, cv2.THRESH_BINARY)
+#     ret2, th2 = cv2.threshold(th1, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+#     blur = cv2.GaussianBlur(th2, (1, 1), 0)
+#     ret3, th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+#     return th3
+
+
+# def remove_noise_and_smooth(image):
+#     filtered = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 41, 3)
+#     kernel = np.ones((1, 1), np.uint8)
+#     opening = cv2.morphologyEx(filtered, cv2.MORPH_OPEN, kernel)
+#     closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
+#     image = image_smoothening(image)
+#     or_image = cv2.bitwise_or(image, closing)
+#     return or_image
 
 def get_elements_type(elements):
 	types = dict()

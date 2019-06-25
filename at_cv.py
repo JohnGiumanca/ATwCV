@@ -24,7 +24,7 @@ output_file = open(output_file_name,'w')
 input_fields_path = assets_path + '/input_fields/'
 cursor_path = assets_path + '/cursor.png'
 elements_path = assets_path + '/elements/'
-input_path = assets_path + '/app_rec3.mov'
+input_path = assets_path + '/app_rec7.mov'
 elements_img_type = 'png'
 pages_path = assets_path + '/pages.txt'
 functions_path = assets_path + '/functions.txt'
@@ -139,7 +139,7 @@ while cap.isOpened():
 					# print(abs(elements_color_diff[eid] - el.color_diff(avg1,avg2)))
 					# event = "Element " + str(eid) + " pressed!"
 					key = eid,current_page
-					action = el.get_event(frame, elements_coord, key, functions,types, input_fields_path)					
+					action = el.get_event(frame, elements, elements_coord, key, functions,types, input_fields_path)					
 					event = current_page + ' ' + str(action)
 					if action is not None and event != event_history[-1]:
 						event_history.append(event)
