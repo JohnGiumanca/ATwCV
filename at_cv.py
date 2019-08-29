@@ -5,18 +5,10 @@ import sys
 import elements as el
 import numpy as np 
 
-
-
-# Notes: 
-# 	* cu Canny se face template matching pe edge-uri, de testat
-# 	* in get_elements_coordinates se face multiscale pentru elemente, poate dam scara ca parametru
-# 	* need to make serious error handlers for the input file. Ex: the elements names form pages file
-# 		needs to be the same as the ones from the elements folder
- 
 if len(sys.argv) > 1:
 	assets_path = sys.argv[1]
 else:
-	assets_path = '/Users/johnsmacbook/Desktop/ATwCV/Assets'
+	assets_path = "..."
 
 output_file_name = 'output_file.txt'
 output_file = open(output_file_name,'w') 
@@ -24,7 +16,7 @@ output_file = open(output_file_name,'w')
 input_fields_path = assets_path + '/input_fields/'
 cursor_path = assets_path + '/cursor.png'
 elements_path = assets_path + '/elements/'
-input_path = assets_path + '/app_rec7.mov'
+input_path = assets_path + '/app_rec.mov'
 elements_img_type = 'png'
 pages_path = assets_path + '/pages.txt'
 functions_path = assets_path + '/functions.txt'
